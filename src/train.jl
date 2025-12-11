@@ -4,6 +4,7 @@
 optimize_clo_regressor = false
 optimize_nclo_regressor = false
 standardize_data = true
+mt = true
 
 using Pkg
 # packages = ["CSV", "DataFrames", "JLD2", "Flux", "MLJ", "MLJFlux", "NNlib", "Optimisers", Plots", "StatsBase"]
@@ -158,11 +159,20 @@ if optimize_clo_regressor
     n_hidden = 2:2:256
     training_error = zeros(length(n_hidden))
     progbar = Progress(length(n_hidden), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(n_hidden)
-        model_clo.builder.n_hidden = n_hidden[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(n_hidden)
+            model_clo.builder.n_hidden = n_hidden[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(n_hidden)
+            model_clo.builder.n_hidden = n_hidden[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.builder.n_hidden = n_hidden[idx]
@@ -178,11 +188,20 @@ if optimize_clo_regressor
     drop = 0.0:0.01:1.0
     training_error = zeros(length(drop))
     progbar = Progress(length(drop), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(drop)
-        model_clo.builder.dropout = drop[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(drop)
+            model_clo.builder.dropout = drop[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(drop)
+            model_clo.builder.dropout = drop[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.builder.dropout = drop[idx]
@@ -198,11 +217,20 @@ if optimize_clo_regressor
     ep = 100:100:10_000
     training_error = zeros(length(ep))
     progbar = Progress(length(ep), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(ep)
-        model_clo.epochs = ep[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(ep)
+            model_clo.epochs = ep[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(ep)
+            model_clo.epochs = ep[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.epochs = ep[idx]
@@ -215,14 +243,23 @@ if optimize_clo_regressor
     end
 
     @info "Optimizing: batch_size"
-    batch_size = 1:10
+    batch_size = 1:40
     training_error = zeros(length(batch_size))
     progbar = Progress(length(batch_size), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(batch_size)
-        model_clo.batch_size = batch_size[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(batch_size)
+            model_clo.batch_size = batch_size[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(batch_size)
+            model_clo.batch_size = batch_size[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.batch_size = batch_size[idx]
@@ -235,14 +272,23 @@ if optimize_clo_regressor
     end
 
     @info "Optimizing: η"
-    η = 0.001:0.001:0.1
+    η = 0.001:0.001:0.5
     training_error = zeros(length(η))
     progbar = Progress(length(η), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(η)
-        model_clo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(η)
+            model_clo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(η)
+            model_clo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
@@ -258,11 +304,20 @@ if optimize_clo_regressor
     λ = 0.0:0.1:10
     training_error = zeros(length(λ))
     progbar = Progress(length(λ), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(λ)
-        model_clo.lambda = λ[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(λ)
+            model_clo.lambda = λ[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(λ)
+            model_clo.lambda = λ[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.lambda = λ[idx]
@@ -279,11 +334,20 @@ if optimize_clo_regressor
     α = 0.01:0.01:1
     training_error = zeros(length(α))
     progbar = Progress(length(α), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(α)
-        model_clo.alpha = α[idx]
-        MLJ.fit!(mach_clo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(α)
+            model_clo.alpha = α[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(α)
+            model_clo.alpha = α[idx]
+            MLJ.fit!(mach_clo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_clo, data_clo[test_idx, :]), clo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_clo.alpha = α[idx]
@@ -390,11 +454,20 @@ if optimize_nclo_regressor
     n_hidden = 2:2:256
     training_error = zeros(length(n_hidden))
     progbar = Progress(length(n_hidden), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(n_hidden)
-        model_nclo.builder.n_hidden = n_hidden[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(n_hidden)
+            model_nclo.builder.n_hidden = n_hidden[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(n_hidden)
+            model_nclo.builder.n_hidden = n_hidden[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.builder.n_hidden = n_hidden[idx]
@@ -410,11 +483,20 @@ if optimize_nclo_regressor
     drop = 0.0:0.01:1.0
     training_error = zeros(length(drop))
     progbar = Progress(length(drop), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(drop)
-        model_nclo.builder.dropout = drop[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(drop)
+            model_nclo.builder.dropout = drop[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(drop)
+            model_nclo.builder.dropout = drop[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.builder.dropout = drop[idx]
@@ -430,11 +512,20 @@ if optimize_nclo_regressor
     ep = 100:100:10_000
     training_error = zeros(length(ep))
     progbar = Progress(length(ep), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(ep)
-        model_nclo.epochs = ep[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(ep)
+            model_nclo.epochs = ep[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(ep)
+            model_nclo.epochs = ep[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.epochs = ep[idx]
@@ -447,14 +538,23 @@ if optimize_nclo_regressor
     end
 
     @info "Optimizing: batch_size"
-    batch_size = 1:10
+    batch_size = 1:40
     training_error = zeros(length(batch_size))
     progbar = Progress(length(batch_size), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(batch_size)
-        model_nclo.batch_size = batch_size[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(batch_size)
+            model_nclo.batch_size = batch_size[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(batch_size)
+            model_nclo.batch_size = batch_size[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.batch_size = batch_size[idx]
@@ -467,14 +567,23 @@ if optimize_nclo_regressor
     end
 
     @info "Optimizing: η"
-    η = 0.001:0.001:0.1
+    η = 0.001:0.001:0.5
     training_error = zeros(length(η))
     progbar = Progress(length(η), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(η)
-        model_nclo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(η)
+            model_nclo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(η)
+            model_nclo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.optimiser = Optimisers.Adam(η[idx], (0.9, 0.999), 1.0e-8)
@@ -490,11 +599,20 @@ if optimize_nclo_regressor
     lambda = 0.0:0.1:10
     training_error = zeros(length(lambda))
     progbar = Progress(length(lambda), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(lambda)
-        model_nclo.lambda = lambda[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(lambda)
+            model_nclo.lambda = lambda[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        for idx in eachindex(lambda)
+            model_nclo.lambda = lambda[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.lambda = lambda[idx]
@@ -511,11 +629,20 @@ if optimize_nclo_regressor
     α = 0.01:0.01:1
     training_error = zeros(length(α))
     progbar = Progress(length(α), dt=1, barlen=20, color=:white)
-    @Threads.threads for idx in eachindex(α)
-        model_nclo.alpha = α[idx]
-        MLJ.fit!(mach_nclo, verbosity=0)
-        training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
-        next!(progbar)
+    if mt
+        @Threads.threads for idx in eachindex(α)
+            model_nclo.alpha = α[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
+    else
+        @Threads.threads for idx in eachindex(α)
+            model_nclo.alpha = α[idx]
+            MLJ.fit!(mach_nclo, verbosity=0)
+            training_error[idx] = RootMeanSquaredError()(MLJ.predict(mach_nclo, data_nclo[test_idx, :]), nclo_level[test_idx])
+            next!(progbar)
+        end
     end
     _, idx = findmin(training_error)
     model_nclo.alpha = α[idx]
