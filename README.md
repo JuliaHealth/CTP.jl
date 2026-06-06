@@ -31,7 +31,7 @@ julia src/install.jl
 Start the server:
 
 ```sh
-julia src/install.jl
+julia src/server.jl
 ```
 
 The server is listening on port 8080. With your web browser, go to [http://localhost:8080](http://localhost:8080), enter patient's data and click the "PREDICT" button.
